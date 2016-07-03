@@ -93,6 +93,8 @@ public class KafkaUnit {
     }
 
     /**
+     * @param zkPort The port Zookeeper will start with
+     * @param brokerPort The port Kafka Broker will start with
      * @deprecated Use KafkaUnit()
      */
     @Deprecated
@@ -106,6 +108,8 @@ public class KafkaUnit {
 
 
     /**
+     * @param zkConnectionString A connection string the zookeeper port will be parsed from
+     * @param kafkaConnectionString A connection string the Kafka broker port will be parsed from
      * @deprecated Use KafkaUnit()
      */
     @Deprecated
@@ -213,6 +217,7 @@ public class KafkaUnit {
     }
 
     /**
+     * @return Broker port
      * @deprecated Use getBrokers()
      */
     @Deprecated
@@ -244,6 +249,8 @@ public class KafkaUnit {
      *
      *                                            Partition number start with 0;
      *                                            Broker number starts with 1
+     *
+     * @param topicName The topic to reassign partition for
      */
     @SuppressWarnings("unchecked")
     public void reassignPartitions(String topicName, Map<Integer, Set<Integer>> partitionToBrokerReplicaAssignments) {
@@ -345,6 +352,8 @@ public class KafkaUnit {
 
 
     /**
+     * @param message The 1st message to send
+     * @param messages The rest of messages to send
      * @deprecated Use send(messages...)
      */
     @SuppressWarnings("unchecked")
@@ -396,7 +405,8 @@ public class KafkaUnit {
 
     /**
      * Set custom broker configuration.
-     * See available config keys in the kafka documentation: http://kafka.apache.org/documentation.html#brokerconfigs
+     * @param configKey See available config keys in the kafka documentation: http://kafka.apache.org/documentation.html#brokerconfigs
+     * @param configValue The values to set for the key
      */
     public void setKafkaBrokerConfig(String configKey, String configValue) {
         kafkaBrokerConfig.setProperty(configKey, configValue);
