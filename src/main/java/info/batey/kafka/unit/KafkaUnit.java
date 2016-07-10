@@ -16,6 +16,7 @@
 package info.batey.kafka.unit;
 
 import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
 import kafka.admin.ReassignPartitionsCommand;
 import kafka.common.TopicAndPartition;
 import kafka.consumer.Consumer;
@@ -31,9 +32,9 @@ import kafka.server.KafkaServerStartable;
 import kafka.utils.VerifiableProperties;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
-import org.apache.commons.io.FileUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
+import org.apache.commons.io.FileUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -195,16 +196,17 @@ public class KafkaUnit {
             throw new RuntimeException("Unable to start Kafka (Broker #"+brokerNum+")", e);
         }
         logDir.deleteOnExit();
-Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     FileUtils.deleteDirectory(logDir);
                 } catch (IOException e) {
-                    LOGGER.warn("Problems deleting temporary directory " + logDir.getAbsolutePath(), e);
+                    logger.warn("Problems deleting temporary directory " + logDir.getAbsolutePath(), e);
                 }
             }
         }));
+
         Properties brokerConfig = new Properties();
         brokerConfig.putAll(kafkaBrokerConfig);
         brokerConfig.setProperty("zookeeper.connect", zookeeperString);
@@ -213,8 +215,6 @@ Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
         brokerConfig.setProperty("port", Integer.toString(brokerPort));
         brokerConfig.setProperty("log.dir", logDir.getAbsolutePath());
         brokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
-            }
-        }));
 
         KafkaServerStartable broker = new KafkaServerStartable(new KafkaConfig(brokerConfig));;
         broker.startup();
@@ -249,7 +249,8 @@ Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
     public void createTopic(String topicName, Integer numPartitions) {
         int replicationFactor = 1;
-        AdminUtils.createTopic(zkUtils, topicName, numPartitions, replicationFactor, new Properties());
+        AdminUtils.createTopic(zkUtils, topicName, numPartitions, replicationFactor, new Properties(),
+                RackAwareMode.Disabled$.MODULE$);
     }
 
     /**
