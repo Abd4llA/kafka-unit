@@ -31,6 +31,7 @@ import kafka.server.KafkaServerStartable;
 import kafka.utils.VerifiableProperties;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
+import org.apache.commons.io.FileUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -187,13 +188,23 @@ public class KafkaUnit {
     }
 
     private KafkaBroker startBroker(int brokerNum, int brokerPort) {
-        File logDir;
+        final File logDir;
         try {
             logDir = Files.createTempDirectory("kafka-broker-"+brokerNum).toFile();
         } catch (IOException e) {
             throw new RuntimeException("Unable to start Kafka (Broker #"+brokerNum+")", e);
         }
         logDir.deleteOnExit();
+Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    FileUtils.deleteDirectory(logDir);
+                } catch (IOException e) {
+                    LOGGER.warn("Problems deleting temporary directory " + logDir.getAbsolutePath(), e);
+                }
+            }
+        }));
         Properties brokerConfig = new Properties();
         brokerConfig.putAll(kafkaBrokerConfig);
         brokerConfig.setProperty("zookeeper.connect", zookeeperString);
@@ -202,6 +213,8 @@ public class KafkaUnit {
         brokerConfig.setProperty("port", Integer.toString(brokerPort));
         brokerConfig.setProperty("log.dir", logDir.getAbsolutePath());
         brokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
+            }
+        }));
 
         KafkaServerStartable broker = new KafkaServerStartable(new KafkaConfig(brokerConfig));;
         broker.startup();
@@ -265,7 +278,7 @@ public class KafkaUnit {
         for (int partition : partitionToBrokerReplicaAssignments.keySet()) {
             Buffer<Object> brokers = JavaConversions.asScalaBuffer(new ArrayList(partitionToBrokerReplicaAssignments.get(partition)));
             partitionToBrokerReplicaAssignment.put(new TopicAndPartition(topicName, partition), brokers);
-        }
+    }
 
         ReassignPartitionsCommand command = new ReassignPartitionsCommand(zkUtils, JavaConversions.mapAsScalaMap(partitionToBrokerReplicaAssignment));
         if (!command.reassignPartitions()) {
